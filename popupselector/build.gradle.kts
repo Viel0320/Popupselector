@@ -1,10 +1,13 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.android.kotlin.multiplatform.library)
-    `maven-publish`
+    alias(libs.plugins.maven.publish)
 }
+
 
 kotlin {
     jvmToolchain(25)
@@ -46,3 +49,22 @@ kotlin {
         }
     }
 }
+
+val hasSigningKey = project.hasProperty("signingInMemoryKey")
+    || project.hasProperty("signing.keyId")
+    || project.hasProperty("signing.secretKeyRingFile")
+    || System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey") != null
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+    if (hasSigningKey) {
+        signAllPublications()
+    }
+    coordinates(
+        groupId = project.property("group").toString(),
+        artifactId = "popupselector",
+        version = project.property("version").toString()
+    )
+}
+
+

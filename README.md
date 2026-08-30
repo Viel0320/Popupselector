@@ -1,6 +1,6 @@
 # PopupSelector
 
-[![JitPack](https://jitpack.io/v/Viel0320/Popupselector.svg)](https://jitpack.io/#Viel0320/Popupselector)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.Viel0320.Popupselector/popupselector.svg)](https://central.sonatype.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Desktop%20%7C%20iOS-green.svg)](https://github.com/Viel0320/Popupselector)
 
@@ -34,36 +34,6 @@ A sleek, fluid morphing popup selector component for **Compose Multiplatform** (
 
 ## 📦 Installation
 
-### Step 1: Add the Maven repository
-
-In your root `settings.gradle.kts`:
-
-```kotlin
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        // GitHub-hosted Maven branch: required for full KMP (iOS) resolution.
-        exclusiveContent {
-            forRepository {
-                maven("https://raw.githubusercontent.com/Viel0320/Popupselector/maven")
-            }
-            filter {
-                includeGroup("com.github.Viel0320.Popupselector")
-            }
-        }
-    }
-}
-```
-
-> [!NOTE]
-> JitPack also serves the Android and JVM artifacts, but its artifact rewriter strips the
-> `-metadata`/`-sources` classifiers from the published Gradle Module Metadata, which breaks
-> Kotlin/Native (iOS) dependency resolution. Use the GitHub-hosted `maven` branch above when
-> your project compiles iOS targets.
-
-### Step 2: Add dependency
-
 In your module's `build.gradle.kts` (e.g., `commonMain`):
 
 ```kotlin
@@ -77,9 +47,14 @@ kotlin {
 ```
 
 > [!NOTE]
+> Ensure `mavenCentral()` is declared in your root `settings.gradle.kts` repositories block.
+
+> [!NOTE]
 > Material 3 is not exposed transitively at compile time. The library reads your
 > `MaterialTheme` for its default colors, but if your module uses Material 3 APIs itself
 > (as most Compose apps do), declare the `compose.material3` dependency explicitly.
+
+For maintainers, see [PUBLISHING.md](PUBLISHING.md) for CI/CD release workflow and publishing instructions.
 
 ---
 
@@ -274,18 +249,18 @@ PopupOverlayContainer(Modifier.fillMaxSize()) {
 ### `PopupSelector` Parameters
 
 
-| Parameter          | Type                                 | Default                 | Description                                                            |
-| :------------------- | :------------------------------------- | :------------------------ | :----------------------------------------------------------------------- |
-| `items`            | `List<PopupItem>`                    | *(Required)*            | List of options to display in the selector.                            |
-| `expanded`         | `Boolean`                            | *(Required)*            | Whether the floating panel is currently expanded.                      |
-| `onExpandedChange` | `(Boolean) -> Unit`                  | *(Required)*            | Callback when the expansion state changes.                             |
-| `onSelect`         | `(index: Int) -> Unit`               | *(Required)*            | Callback invoked when an item is selected.                             |
-| `modifier`         | `Modifier`                           | `Modifier`              | Modifier applied to the outer layout container.                        |
-| `selectedIndex`    | `Int?`                               | `null`                  | Index of the currently selected option.                                |
-| `style`            | `PopupStyle`                         | `PopupDefaults.style()` | Visual configuration: metrics, timing, colours, typography, animation. |
-| `layout`           | `PopupLayout`                        | `PopupLayout()`         | Layout configuration: width, max height, alignment, host.              |
-| `anchorModifier`   | `Modifier`                           | `Modifier`              | Modifier applied to the resting collapsed button surface.              |
-| `surfaceModifier`  | `Modifier`                           | `Modifier`              | Modifier applied to the expanding floating surface.                    |
+| Parameter          | Type                                 | Default                 | Description                                                                                              |
+| :------------------- | :------------------------------------- | :------------------------ | :--------------------------------------------------------------------------------------------------------- |
+| `items`            | `List<PopupItem>`                    | *(Required)*            | List of options to display in the selector.                                                              |
+| `expanded`         | `Boolean`                            | *(Required)*            | Whether the floating panel is currently expanded.                                                        |
+| `onExpandedChange` | `(Boolean) -> Unit`                  | *(Required)*            | Callback when the expansion state changes.                                                               |
+| `onSelect`         | `(index: Int) -> Unit`               | *(Required)*            | Callback invoked when an item is selected.                                                               |
+| `modifier`         | `Modifier`                           | `Modifier`              | Modifier applied to the outer layout container.                                                          |
+| `selectedIndex`    | `Int?`                               | `null`                  | Index of the currently selected option.                                                                  |
+| `style`            | `PopupStyle`                         | `PopupDefaults.style()` | Visual configuration: metrics, timing, colours, typography, animation.                                   |
+| `layout`           | `PopupLayout`                        | `PopupLayout()`         | Layout configuration: width, max height, alignment, host.                                                |
+| `anchorModifier`   | `Modifier`                           | `Modifier`              | Modifier applied to the resting collapsed button surface.                                                |
+| `surfaceModifier`  | `Modifier`                           | `Modifier`              | Modifier applied to the expanding floating surface.                                                      |
 | `collapsedContent` | `(@Composable RowScope.() -> Unit)?` | `null`                  | Custom composable slot for the collapsed trigger button. Last, so it can be passed as a trailing lambda. |
 
 ### `PopupLayout`
@@ -304,7 +279,7 @@ PopupOverlayContainer(Modifier.fillMaxSize()) {
 
 | Field               | Type                           | Default                                    | Description                                                 |
 | :-------------------- | :------------------------------- | :------------------------------------------- | :------------------------------------------------------------ |
-| `colors`            | `PopupColors`                  | *(Required)* — `PopupDefaults.colors()`    | Collapsed/expanded containers, border, content.             |
+| `colors`            | `PopupColors`                  | *(Required)* — `PopupDefaults.colors()`   | Collapsed/expanded containers, border, content.             |
 | `metrics`           | `PopupMetrics`                 | `PopupMetrics.Default`                     | Sizes, spacing, corner radius, elevations.                  |
 | `timing`            | `PopupTiming`                  | `PopupTiming()`                            | Morph thresholds and stagger constants.                     |
 | `textStyle`         | `TextStyle?`                   | `null`                                     | Typography for labels. Defaults to ambient`LocalTextStyle`. |

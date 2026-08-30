@@ -40,7 +40,7 @@ In your module's `build.gradle.kts` (e.g., `commonMain`):
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.1")
+            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.2")
         }
     }
 }
@@ -54,7 +54,6 @@ kotlin {
 > `MaterialTheme` for its default colors, but if your module uses Material 3 APIs itself
 > (as most Compose apps do), declare the `compose.material3` dependency explicitly.
 
-For maintainers, see [PUBLISHING.md](PUBLISHING.md) for CI/CD release workflow and publishing instructions.
 
 ---
 

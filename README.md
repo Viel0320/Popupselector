@@ -34,7 +34,7 @@ A sleek, fluid morphing popup selector component for **Compose Multiplatform** (
 
 ## 📦 Installation
 
-### Step 1: Add JitPack repository
+### Step 1: Add the Maven repository
 
 In your root `settings.gradle.kts`:
 
@@ -43,10 +43,24 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://jitpack.io")
+        // GitHub-hosted Maven branch: required for full KMP (iOS) resolution.
+        exclusiveContent {
+            forRepository {
+                maven("https://raw.githubusercontent.com/Viel0320/Popupselector/maven")
+            }
+            filter {
+                includeGroup("com.github.Viel0320.Popupselector")
+            }
+        }
     }
 }
 ```
+
+> [!NOTE]
+> JitPack also serves the Android and JVM artifacts, but its artifact rewriter strips the
+> `-metadata`/`-sources` classifiers from the published Gradle Module Metadata, which breaks
+> Kotlin/Native (iOS) dependency resolution. Use the GitHub-hosted `maven` branch above when
+> your project compiles iOS targets.
 
 ### Step 2: Add dependency
 

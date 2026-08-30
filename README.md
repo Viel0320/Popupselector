@@ -1,8 +1,8 @@
 # PopupSelector
 
 [![JitPack](https://jitpack.io/v/Viel0320/Popupselector.svg)](https://jitpack.io/#Viel0320/Popupselector)
-[![License](<https://img.shields.io/badge/License-Apache%202.0-blue.svg>)](https://opensource.org/licenses/Apache-2.0)
-[![Platform](<https://img.shields.io/badge/Platform-Android%20%7C%20Desktop%20%7C%20iOS-green.svg>)](https://github.com/Viel0320/Popupselector)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Desktop%20%7C%20iOS-green.svg)](https://github.com/Viel0320/Popupselector)
 
 A sleek, fluid morphing popup selector component for **Compose Multiplatform** (Android, JVM/Desktop, iOS).
 
@@ -13,9 +13,11 @@ A sleek, fluid morphing popup selector component for **Compose Multiplatform** (
 - 🪶 **Zero External Dependencies**: Built exclusively on Compose Foundation and Material 3.
 - 🪄 **Fluid Morphing Animation**: Seamless continuous transition between the collapsed button and the expanded floating surface.
 - 🛫 **Flying Selected Item**: The selected item visibly flies from the trigger button into its position inside the expanded list.
-- 🧭 **Smart Direction Resolution**: Automatically picks the best expansion corner (`TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`) based on available screen space and window edges.
-- 🎨 **Deep Customization**: Fully customizable colors, shapes, heights, widths, and item slots.
+- 🧭 **Smart Direction Resolution**: Each axis picks its side from the available space — centring on the current selection, hugging the leading edge, or pinning an explicit side (`Top`/`Bottom`, `Start`/`End`) via `PopupVerticalAlignment` / `PopupHorizontalAlignment`.
+- ⌨️ **Keyboard Navigation**: Arrow keys move the cursor, `Enter`/`Space` select, `Esc` dismisses. Fully operable on desktop.
+- 🎨 **Deep Customization**: Fully customizable colors, corner radius, heights, widths, and item slots.
 - 🧩 **Pluggable Visual Effects**: Attach frosted-glass blur (Haze / Blur) or custom backgrounds via `anchorModifier` and `surfaceModifier`.
+- 🧱 **Fully Overridable Metrics**: Every size, spacing and animation threshold is a plain data class you can replace wholesale.
 
 ---
 
@@ -43,11 +45,16 @@ In your module's `build.gradle.kts` (e.g., `commonMain`):
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.github.Viel0320.Popupselector:popupselector:1.0.0")
+            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.0")
         }
     }
 }
 ```
+
+> [!NOTE]
+> Material 3 is not exposed transitively at compile time. The library reads your
+> `MaterialTheme` for its default colors, but if your module uses Material 3 APIs itself
+> (as most Compose apps do), declare the `compose.material3` dependency explicitly.
 
 ---
 
@@ -79,7 +86,7 @@ fun FilterSelector() {
         selectedIndex = selectedIndex,
         onExpandedChange = { expanded = it },
         onSelect = { selectedIndex = it },
-        panelWidth = PopupWidth.Wrap,
+        layout = PopupLayout(width = PopupWidth.Wrap),
     )
 }
 ```
@@ -95,25 +102,21 @@ val items = remember {
     listOf(
         PopupItem(
             key = "daily",
-            content = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Today, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Daily Digest")
-                }
-            },
-            count = { Text("7:00 AM", style = MaterialTheme.typography.bodySmall) }
-        ),
-        PopupItem(
-            key = "weekly",
-            content = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.DateRange, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Weekly Summary")
-                }
-            },
-        )
+            count = { Text("7:00 AM", style = MaterialTheme.typography.bodySmall) },
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Today, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Daily Digest")
+            }
+        },
+        PopupItem(key = "weekly") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DateRange, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Weekly Summary")
+            }
+        },
     )
 }
 
@@ -123,7 +126,7 @@ PopupSelector(
     selectedIndex = selectedIndex,
     onExpandedChange = { expanded = it },
     onSelect = { selectedIndex = it },
-    panelWidth = PopupWidth.Fixed(280.dp),
+    layout = PopupLayout(width = PopupWidth.Fixed(280.dp)),
 )
 ```
 
@@ -131,31 +134,51 @@ PopupSelector(
 
 ### 3. Width Strategies (`PopupWidth`)
 
-`PopupSelector` supports 3 width calculation strategies:
+Set via `PopupLayout(width = ...)`. Three strategies are available:
 
-| Strategy                    | Description                                                                              |
-| :-------------------------- | :--------------------------------------------------------------------------------------- |
-| `PopupWidth.MatchAnchor`  | *(Default)* Expands to the exact measured width of the collapsed trigger button.       |
-| `PopupWidth.Wrap`         | Fits the natural intrinsic width of the widest row item (constrained by screen margins). |
-| `PopupWidth.Fixed(width)` | Uses an explicit fixed width (e.g. `PopupWidth.Fixed(260.dp)`).                         |
+
+| Strategy                  | Description                                                                                                                           |
+| :-------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| `PopupWidth.Wrap`         | *(Default)* Fits the natural intrinsic width of the widest row item (constrained by screen margins), never narrower than the trigger. |
+| `PopupWidth.MatchAnchor`  | Expands to the exact measured width of the collapsed trigger button.                                                                  |
+| `PopupWidth.Fixed(width)` | Uses an explicit fixed width (e.g.`PopupWidth.Fixed(260.dp)`).                                                                        |
+
+> [!NOTE]
+> With `MatchAnchor` or a narrow `Fixed` width, overflowing labels marquee-scroll, but the
+> trailing count slot is laid out at its shared section width and can be clipped if the panel is
+> narrower than the content and count sections combined. Prefer `PopupWidth.Wrap` when items
+> carry counts.
 
 ---
 
-### 4. Expansion Origin (`PopupAlignment`)
+### 4. Expansion Origin (Popup Alignments)
 
-Controls the corner from which the panel expands:
+Set via `PopupLayout(verticalAlignment = ..., horizontalAlignment = ...)`. The two axes resolve
+independently, so the panel can, say, open downward while hugging the trailing edge.
 
-- `PopupAlignment.Auto`: *(Default)* Dynamically inspects available screen space and chooses the best corner.
-- `PopupAlignment.TopStart` / `PopupAlignment.TopEnd`: Anchors to top edges (layout-direction aware).
-- `PopupAlignment.BottomStart` / `PopupAlignment.BottomEnd`: Anchors to bottom edges (layout-direction aware).
-- `PopupAlignment.TopLeft` / `PopupAlignment.TopRight`: Anchors to top edges (absolute).
-- `PopupAlignment.BottomLeft` / `PopupAlignment.BottomRight`: Anchors to bottom edges (absolute).
+**Vertical** — `PopupVerticalAlignment`:
+
+- `Auto`: *(Default)* With a selection, aligns the selected row's vertical centre with the trigger's centre, so the current selection stays put as the panel opens. Without a selection, compares the room above and below and picks the side that fits.
+- `Top` / `Bottom`: Pin the panel to that side of the trigger.
+
+**Horizontal** — `PopupHorizontalAlignment`:
+
+- `Auto`: *(Default)* Hugs the trigger's leading side when both sides fit; opens toward the only side with room. Mirrors with the layout direction.
+- `Start` / `End`: Pin a direction-aware side (mirrors in RTL).
+
+Both axes also offer `Inherit`, which follows the matching component of `LocalPopupAlignment` —
+the ambient alignment a subtree provides with `CompositionLocalProvider` (typically alongside a
+`Box(contentAlignment = ...)`), falling back to `Auto` when none is provided.
+
+Explicit placements are honoured whether or not an item is selected. Only `Auto` repositions the
+panel vertically to match the selection.
 
 ---
 
 ### 5. Custom Collapsed Trigger Button (Menu Mode)
 
-You can customize the content inside the collapsed button (ideal for dropdown action menus):
+You can customize the content inside the collapsed button (ideal for dropdown action menus).
+`collapsedContent` is the last parameter, so it can be passed as a trailing lambda:
 
 ```kotlin
 PopupSelector(
@@ -163,10 +186,9 @@ PopupSelector(
     expanded = expanded,
     onExpandedChange = { expanded = it },
     onSelect = { index -> handleMenuAction(index) },
-    collapsedContent = {
-        Text("Actions Menu", fontWeight = FontWeight.Bold)
-    }
-)
+) {
+    Text("Actions Menu", fontWeight = FontWeight.Bold)
+}
 ```
 
 ---
@@ -211,7 +233,7 @@ PopupOverlayContainer(Modifier.fillMaxSize()) {
                 selectedIndex = selectedIndex,
                 onExpandedChange = { expanded = it },
                 onSelect = { selectedIndex = it },
-                colors = PopupDefaults.blurColors(),
+                style = PopupDefaults.style(colors = PopupDefaults.blurColors()),
                 anchorModifier = Modifier.hazeEffect(state = parentHazeState, style = HazeMaterials.ultraThin()),
                 surfaceModifier = Modifier.hazeEffect(state = rootHazeState, style = HazeMaterials.ultraThin()),
             )
@@ -226,30 +248,97 @@ PopupOverlayContainer(Modifier.fillMaxSize()) {
 
 ### `PopupSelector` Parameters
 
-| Parameter                            | Type                                   | Default                               | Description                                                                                               |
-| :----------------------------------- | :------------------------------------- | :------------------------------------ | :-------------------------------------------------------------------------------------------------------- |
-| `items`                              | `List<PopupItem>`                      | *(Required)*                          | List of options to display in the selector.                                                               |
-| `expanded`                           | `Boolean`                              | *(Required)*                          | Whether the floating panel is currently expanded.                                                         |
-| `onExpandedChange`                   | `(Boolean) -> Unit`                    | *(Required)*                          | Callback when the expansion state changes.                                                                |
-| `onSelect`                           | `(index: Int) -> Unit`                 | *(Required)*                          | Callback invoked when an item is selected.                                                                |
-| `modifier`                           | `Modifier`                             | `Modifier`                            | Modifier applied to the outer layout container.                                                           |
-| `selectedIndex`                      | `Int?`                                 | `null`                                | Index of the currently selected option.                                                                   |
-| `collapsedContent`                   | `(@Composable RowScope.() -> Unit)?`   | `null`                                | Custom composable slot for the collapsed trigger button.                                                  |
-| `alignment`                          | `PopupAlignment`                       | `PopupAlignment.Auto`                 | Preferred origin corner for panel expansion.                                                              |
-| `panelWidth`                         | `PopupWidth`                           | `PopupWidth.MatchAnchor`              | Panel width sizing strategy.                                                                              |
-| `panelMaxHeight`                     | `Dp`                                   | `Dp.Unspecified`                      | Maximum height constraint for the expanded panel list.                                                    |
-| `hostPolicy`                         | `PopupHostPolicy`                      | `PopupDefaults.hostPolicy()`          | Strategy for hosting the expanded surface (`Auto`, `Window`, or `Overlay`).                               |
-| `autoMarquee`                        | `Boolean`                              | `PopupDefaults.autoMarquee()` (`true`)| Whether option rows overflowing available container width automatically use smooth marquee scrolling.     |
-| `anchorModifier`                     | `Modifier`                             | `Modifier`                            | Modifier applied to the resting collapsed button surface.                                                 |
-| `surfaceModifier`                    | `Modifier`                             | `Modifier`                            | Modifier applied to the expanding floating surface.                                                       |
-| `textStyle`                          | `TextStyle?`                           | `null`                                | Optional typography style for selector labels (defaults to ambient `LocalTextStyle`).                     |
-| `colors`                             | `PopupColors`                          | `PopupDefaults.colors()`              | Color palette for collapsed/expanded containers, border and text.                                         |
-| `shapes`                             | `PopupShapes`                          | `PopupDefaults.shapes()`              | Corner radius for popup surfaces.                                                                         |
-| `collapsedHeight`                    | `Dp`                                   | `32.dp`                               | Height of the collapsed button surface.                                                                   |
-| `animationSpec`                      | `AnimationSpec<Float>`                 | `PopupDefaults.animationSpec()`       | Main morph and reveal animation spring specification.                                                     |
-| `sizeAnimationSpec`                  | `FiniteAnimationSpec<IntSize>`         | `PopupDefaults.sizeAnimationSpec()`   | Size change animation specification for the collapsed anchor button.                                      |
-| `expandedAccessibilityDescription`   | `String`                               | `"Expanded"`                          | Accessibility text for expanded state.                                                                    |
-| `collapsedAccessibilityDescription`  | `String`                               | `"Collapsed"`                         | Accessibility text for collapsed state.                                                                   |
+
+| Parameter          | Type                                 | Default                 | Description                                                            |
+| :------------------- | :------------------------------------- | :------------------------ | :----------------------------------------------------------------------- |
+| `items`            | `List<PopupItem>`                    | *(Required)*            | List of options to display in the selector.                            |
+| `expanded`         | `Boolean`                            | *(Required)*            | Whether the floating panel is currently expanded.                      |
+| `onExpandedChange` | `(Boolean) -> Unit`                  | *(Required)*            | Callback when the expansion state changes.                             |
+| `onSelect`         | `(index: Int) -> Unit`               | *(Required)*            | Callback invoked when an item is selected.                             |
+| `modifier`         | `Modifier`                           | `Modifier`              | Modifier applied to the outer layout container.                        |
+| `selectedIndex`    | `Int?`                               | `null`                  | Index of the currently selected option.                                |
+| `style`            | `PopupStyle`                         | `PopupDefaults.style()` | Visual configuration: metrics, timing, colours, typography, animation. |
+| `layout`           | `PopupLayout`                        | `PopupLayout()`         | Layout configuration: width, max height, alignment, host.              |
+| `anchorModifier`   | `Modifier`                           | `Modifier`              | Modifier applied to the resting collapsed button surface.              |
+| `surfaceModifier`  | `Modifier`                           | `Modifier`              | Modifier applied to the expanding floating surface.                    |
+| `collapsedContent` | `(@Composable RowScope.() -> Unit)?` | `null`                  | Custom composable slot for the collapsed trigger button. Last, so it can be passed as a trailing lambda. |
+
+### `PopupLayout`
+
+
+| Field                 | Type                       | Default                     | Description                                                                                                          |
+| :---------------------- | :--------------------------- | :---------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `width`               | `PopupWidth`               | `PopupWidth.Wrap`           | Panel width strategy:`Wrap`,`MatchAnchor`,  or `Fixed(width)`.                                                      |
+| `maxHeight`           | `Dp`                       | `Dp.Unspecified`            | Maximum panel height. Unspecified uses 60% of the window height.                                                     |
+| `verticalAlignment`   | `PopupVerticalAlignment`   | `Auto`                      | Vertical placement:`Auto`, `Top`, `Bottom`, `Inherit`. See [Expansion Origin](#4-expansion-origin-popup-alignments). |
+| `horizontalAlignment` | `PopupHorizontalAlignment` | `Auto`                      | Horizontal placement:`Auto`, `Start`, `End`, `Inherit`.                                                              |
+| `host`                | `PopupHostPolicy`          | `PopupHostPolicy.Overlay()` | Where the panel is hosted:`Window` or `Overlay(state?)`.                                                             |
+
+### `PopupStyle`
+
+
+| Field               | Type                           | Default                                    | Description                                                 |
+| :-------------------- | :------------------------------- | :------------------------------------------- | :------------------------------------------------------------ |
+| `colors`            | `PopupColors`                  | *(Required)* — `PopupDefaults.colors()`    | Collapsed/expanded containers, border, content.             |
+| `metrics`           | `PopupMetrics`                 | `PopupMetrics.Default`                     | Sizes, spacing, corner radius, elevations.                  |
+| `timing`            | `PopupTiming`                  | `PopupTiming()`                            | Morph thresholds and stagger constants.                     |
+| `textStyle`         | `TextStyle?`                   | `null`                                     | Typography for labels. Defaults to ambient`LocalTextStyle`. |
+| `animationSpec`     | `AnimationSpec<Float>`         | spring (damping 0.9, medium-low stiffness) | Main morph and reveal animation spec.                       |
+| `sizeAnimationSpec` | `FiniteAnimationSpec<IntSize>` | spring (damping 0.9, medium-low stiffness) | Size change animation spec for the collapsed anchor.        |
+| `autoMarquee`       | `Boolean`                      | `true`                                     | Whether overflowing rows scroll with a marquee.             |
+
+### `PopupMetrics`
+
+All values are `@Stable` data class fields, so you can override any subset:
+
+`collapsedHeight` (32.dp) · `collapsedTouchTarget` (48.dp) · `rowTouchTargetHeight` (48.dp) ·
+`rowVerticalSpacing` (4.dp) · `panelVerticalPadding` (8.dp) · `collapsedHorizontalPadding` (16.dp) ·
+`rowHorizontalPadding` (12.dp) · `chevronLeadingPadding` (8.dp) · `countSpacing` (12.dp) ·
+`borderWidth` (1.dp) · `chevronSize` (18.dp) · `rowEnterTranslation` (14.dp) · `edgeMargin` (8.dp) ·
+`maxHeightFraction` (0.6f) · `disabledAlpha` (0.38f) · `corner` (8.dp) · `collapsedElevation` (0.dp) ·
+`expandedElevation` (6.dp)
+
+### `PopupTiming`
+
+`visibleEpsilon` (0.0001f) · `morphCompleteThreshold` (0.999f) · `chevronExpandFadeSpan` (0.25f) ·
+`chevronCollapseFadeSpan` (0.25f) · `staggerBase` (0.15f) · `staggerStep` (0.06f) ·
+`staggerMax` (0.6f) · `borderMinWidth` (0.25f) · `containerMinAlpha` (0.001f) ·
+`shadowStartFraction` (0.85f) · `anchorHighlightFadeMillis` (90 ms)
+
+`shadowStartFraction` delays the expanding surface's shadow until the morph is that far along, so a
+low-elevation shadow doesn't read as a dark rim around transparent containers — set `0f` for an
+always-on ramp. `anchorHighlightFadeMillis` is the collapsed trigger's press/hover highlight fade
+duration.
+
+### `PopupItem`
+
+
+| Field     | Type                                 | Default | Description                                 |
+| :---------- | :------------------------------------- | :-------- | :-------------------------------------------- |
+| `key`     | `Any?`                               | `null`  | Stable identity for the option.             |
+| `enabled` | `Boolean`                            | `true`  | Whether the option can be selected.         |
+| `count`   | `(@Composable RowScope.() -> Unit)?` | `null`  | Optional trailing slot, e.g. a count badge. |
+| `content` | `@Composable RowScope.() -> Unit`    | —      | Primary row content.                        |
+
+---
+
+### Keyboard & Accessibility
+
+The expanded panel takes focus automatically and supports:
+
+
+| Key               | Action                                      |
+| :------------------ | :-------------------------------------------- |
+| `↓` / `Tab`      | Move the cursor to the next enabled option. |
+| `↑`              | Move the cursor to the previous option.     |
+| `Enter` / `Space` | Select the focused option and dismiss.      |
+| `Esc`             | Dismiss without changing the selection.     |
+
+Disabled options are skipped by arrow-key navigation. While the panel collapses, its rows leave
+the accessibility tree, and the surface unmounts entirely once collapsed, so the fading panel is
+never announced. The collapsed trigger announces its expansion state via `stateDescription`
+("Expanded" / "Collapsed"); Compose currently has no localizable expanded-state semantic property,
+so these strings are supplied by the library in English.
 
 ---
 

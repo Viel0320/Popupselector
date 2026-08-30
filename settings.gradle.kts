@@ -13,3 +13,4 @@ plugins {
 
 include(":popupselector")
 include(":sample")
+include(":sample-android")

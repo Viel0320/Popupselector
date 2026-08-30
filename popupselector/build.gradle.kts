@@ -13,7 +13,9 @@ kotlin {
         namespace = "com.viel.compose.popupselector"
         compileSdk = 37
         minSdk = 24
-        withHostTest {}
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
     
     jvm("jvm")
@@ -25,11 +27,22 @@ kotlin {
         commonMain.dependencies {
             api(libs.compose.runtime)
             api(libs.compose.foundation)
-            api(libs.compose.material3)
+            implementation(libs.compose.material3)
         }
         
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.compose.ui.test)
+        }
+
+        getByName("androidHostTest").dependencies {
+            implementation(libs.robolectric)
+            implementation(libs.androidx.activity.compose)
+        }
+
+        // Desktop UI tests need the platform Skia runtime; without it Skiko fails to initialise.
+        jvmTest.dependencies {
+            implementation(compose.desktop.currentOs)
         }
     }
 }

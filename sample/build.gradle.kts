@@ -1,46 +1,42 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
 }
 
-android {
-    namespace = "com.viel.compose.popupselector.sample"
-    compileSdk = 37
+// Single KMP home for the sample: shared UI in commonMain, desktop entry in jvmMain.
+// AGP 9's KMP plugin cannot produce APKs, so the installable Android shell (MainActivity +
+// app manifest) lives in :sample-android and consumes this module as a library.
+kotlin {
+    jvmToolchain(25)
 
-    defaultConfig {
-        applicationId = "com.viel.compose.popupselector.sample"
+    android {
+        namespace = "com.viel.compose.popupselector.sample"
+        compileSdk = 37
         minSdk = 24
-        targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.toVersion(25)
-        targetCompatibility = JavaVersion.toVersion(25)
-    }
+    jvm()
 
-    buildFeatures {
-        compose = true
-    }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":popupselector"))
+            implementation(libs.compose.material3)
+            implementation(libs.haze)
+            implementation(libs.haze.materials)
+            implementation(libs.miuix.blur)
+        }
 
-    sourceSets.named("main") {
-        manifest.srcFile("src/androidMain/AndroidManifest.xml")
-        kotlin.directories.add("src/commonMain/kotlin")
-        kotlin.directories.add("src/androidMain/kotlin")
-    }
-
-    buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("debug")
+        // Platform Skia runtime — required for the desktop app window to start at all.
+        jvmMain.dependencies {
+            implementation(compose.desktop.currentOs)
         }
     }
 }
 
-dependencies {
-    implementation(project(":popupselector"))
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.haze)
-    implementation(libs.haze.materials)
+compose.desktop {
+    application {
+        mainClass = "com.viel.compose.popupselector.sample.MainKt"
+    }
 }

@@ -5,6 +5,19 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Publish target (use github-packages to backfill/skip Maven Central)'
+        type: choice
+        default: all
+        options:
+          - all
+          - central
+          - github-packages
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   publish:
@@ -61,3 +74,12 @@ jobs:
 
           echo "Publishing and releasing artifacts to Maven Central..."
           ./gradlew publishAndReleaseToMavenCentral --no-daemon --no-configuration-cache
+        if: inputs.target != 'github-packages'
+
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Publishing artifacts to GitHub Packages..."
+          ./gradlew publishAllPublicationsToGitHubPackagesRepository --no-daemon --no-configuration-cache
+        if: inputs.target != 'central'

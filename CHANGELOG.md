@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.2] - 2026-08-30
 
+### Added
+
+- Publications are now also pushed to GitHub Packages (`maven.pkg.github.com/Viel0320/Popupselector`)
+  alongside Maven Central.
+
 ### Changed
 
 - Move the Maven coordinates to `io.github.viel0320:popupselector`. The Maven Central Portal only

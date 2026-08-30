@@ -54,6 +54,27 @@ kotlin {
 > `MaterialTheme` for its default colors, but if your module uses Material 3 APIs itself
 > (as most Compose apps do), declare the `compose.material3` dependency explicitly.
 
+### GitHub Packages (alternative)
+
+The library is also published to [GitHub Packages](https://github.com/Viel0320/Popupselector/packages).
+GitHub's Maven registry requires authentication even for public packages, so declare the
+repository with credentials (a GitHub username plus a token with `read:packages`) in your
+`settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/Viel0320/Popupselector")
+            credentials {
+                username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+```
+
 
 ---
 

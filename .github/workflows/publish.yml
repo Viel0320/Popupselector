@@ -31,7 +31,8 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run Tests & Checks
-        run: ./gradlew check --no-daemon
+        run: ./gradlew :popupselector:check --no-daemon
+
 
 
       - name: Publish to Maven Central

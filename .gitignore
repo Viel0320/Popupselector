@@ -11,4 +11,5 @@
 .externalNativeBuild
 .cxx
 *.apk
+!Preview/*.apk
 *.aab

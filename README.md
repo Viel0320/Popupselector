@@ -8,6 +8,17 @@ A sleek, fluid morphing popup selector component for **Compose Multiplatform** (
 
 ---
 
+## 🎬 Preview
+
+<div align="center">
+  <img src="Preview/preview.gif" width="480" alt="PopupSelector Preview" style="max-width: 100%; border-radius: 8px;" />
+  <p>
+    📦 <a href="Preview/PopupSelector%20Demo.apk"><b>Download Demo APK</b></a>
+  </p>
+</div>
+
+---
+
 ## ✨ Features
 
 - 🪶 **Zero External Dependencies**: Built exclusively on Compose Foundation and Material 3.

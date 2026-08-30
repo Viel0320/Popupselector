@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-08-30
+
+### Changed
+
+- Move the Maven coordinates to `io.github.viel0320:popupselector`. The Maven Central Portal only
+  accepts GitHub-verified namespaces of the form `io.github.<username>`; the previous
+  `com.github.Viel0320.Popupselector` group was rejected at component validation and was never
+  published, so no migration is needed.
+
 ## [2.0.1] - 2026-08-30
 
 ### Fixed

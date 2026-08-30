@@ -1,6 +1,6 @@
 # PopupSelector
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.Viel0320.Popupselector/popupselector.svg)](https://central.sonatype.com/)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.viel0320/popupselector.svg)](https://central.sonatype.com/artifact/io.github.viel0320/popupselector)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Desktop%20%7C%20iOS-green.svg)](https://github.com/Viel0320/Popupselector)
 
@@ -40,7 +40,7 @@ In your module's `build.gradle.kts` (e.g., `commonMain`):
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.2")
+            implementation("io.github.viel0320:popupselector:2.0.2")
         }
     }
 }

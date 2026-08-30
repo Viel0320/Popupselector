@@ -56,7 +56,7 @@ In your module's `build.gradle.kts` (e.g., `commonMain`):
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.0")
+            implementation("com.github.Viel0320.Popupselector:popupselector:2.0.1")
         }
     }
 }

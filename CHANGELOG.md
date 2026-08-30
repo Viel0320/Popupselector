@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-08-30
+
+### Fixed
+
+- Pin the Maven group to `com.github.Viel0320.Popupselector` in `gradle.properties`. JitPack no
+  longer rewrites publication coordinates, which previously stripped the `-metadata`/`-sources`
+  classifiers from Gradle Module Metadata and broke Kotlin/Native (iOS) dependency resolution.
+
 ## [2.0.0] - 2026-08-30
 
 This release restructures the public API around two configuration objects and fixes several

@@ -46,5 +46,18 @@ jobs:
             echo "::error::Required secrets (MAVEN_CENTRAL_USERNAME or SIGNING_SECRET_KEY) are missing."
             exit 1
           fi
+
+          # The Gradle signing plugin fails with an opaque "Could not read PGP secret key"
+          # when the secret content is malformed. Fail early with an actionable message.
+          # Only the armor header and line count are printed - never key material.
+          first_line=$(printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | head -n 1 | tr -d '\r')
+          key_lines=$(printf '%s' "$ORG_GRADLE_PROJECT_signingInMemoryKey" | wc -l)
+          if [ "$first_line" != "-----BEGIN PGP PRIVATE KEY BLOCK-----" ]; then
+            echo "::error::SIGNING_SECRET_KEY is not an ASCII-armored PGP private key."
+            echo "::error::First line was: '${first_line:-<empty>}' (total lines: ${key_lines})."
+            echo "::error::Re-export with: gpg --armor --export-secret-keys <KEYID>, then paste the entire block including the BEGIN/END lines."
+            exit 1
+          fi
+
           echo "Publishing and releasing artifacts to Maven Central..."
           ./gradlew publishAndReleaseToMavenCentral --no-daemon --no-configuration-cache

@@ -12,7 +12,12 @@ plugins {
 kotlin {
     jvmToolchain(25)
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     android {
+
         namespace = "com.viel.compose.popupselector"
         compileSdk = 37
         minSdk = 24

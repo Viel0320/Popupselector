@@ -367,6 +367,17 @@ so these strings are supplied by the library in English.
 
 ---
 
+## ⚡ Performance Note (Debug vs. Release)
+
+> [!TIP]
+> **Animation & State Handoff in Debug Builds**
+>
+> Due to Compose runtime overhead and unoptimized recompositions in **Debug** builds, the 1-frame transition/handoff interval between the collapsed anchor and the morphing surface may occasionally be amplified.
+>
+> In **Release** builds (with R8 / compiler optimizations enabled), this handoff is seamless and transitions run smoothly at full frame rate. Always evaluate animation fluidity on Release builds.
+
+---
+
 ## 📄 License
 
 ```

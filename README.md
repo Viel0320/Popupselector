@@ -40,7 +40,7 @@ In your module's `build.gradle.kts` (e.g., `commonMain`):
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.viel0320:popupselector:2.0.2")
+            implementation("io.github.viel0320:popupselector:2.1.0")
         }
     }
 }
@@ -299,7 +299,7 @@ PopupOverlayContainer(Modifier.fillMaxSize()) {
 
 | Field               | Type                           | Default                                    | Description                                                 |
 | :-------------------- | :------------------------------- | :------------------------------------------- | :------------------------------------------------------------ |
-| `colors`            | `PopupColors`                  | *(Required)* — `PopupDefaults.colors()`   | Collapsed/expanded containers, border, content.             |
+| `colors`            | `PopupColors`                  | *(Required)* — `PopupDefaults.colors()`   | Collapsed/expanded containers, border, content, activeContent (the selected row's text colour, defaulting to the theme's primary). |
 | `metrics`           | `PopupMetrics`                 | `PopupMetrics.Default`                     | Sizes, spacing, corner radius, elevations.                  |
 | `timing`            | `PopupTiming`                  | `PopupTiming()`                            | Morph thresholds and stagger constants.                     |
 | `textStyle`         | `TextStyle?`                   | `null`                                     | Typography for labels. Defaults to ambient`LocalTextStyle`. |

@@ -34,6 +34,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -408,7 +409,7 @@ private fun PopupOptionList(
                 ) {
                     PopupRowContent(
                         item = item,
-                        contentColor = style.colors.content,
+                        contentColor = if (isSelected) selectedRowContentColor(style) else style.colors.content,
                         metrics = metrics,
                         autoMarquee = style.autoMarquee,
                         sections = sections,
@@ -430,6 +431,27 @@ internal fun Modifier.focusedRowBackground(style: PopupStyle): Modifier = this
 /** The [focusedRowBackground] fill, exposed so draw-based callers can reuse the same colour. */
 internal fun focusedRowHighlightColor(style: PopupStyle): Color =
     style.colors.content.copy(alpha = 0.12f)
+
+/**
+ * The selected row's content colour: the palette's [PopupColors.activeContent] when specified, else
+ * [PopupColors.content]. Applied through `LocalContentColor`, so it covers the whole row content —
+ * the label and the count slot alike — while the highlight pill stays [focusedRowHighlightColor].
+ */
+internal fun selectedRowContentColor(style: PopupStyle): Color =
+    if (style.colors.activeContent.isSpecified) style.colors.activeContent else style.colors.content
+
+/**
+ * The flying selected row's content colour at a morph [fraction].
+ *
+ * The colour rides the morph instead of switching at the handovers: at fraction 0 it equals the
+ * resting trigger's [PopupColors.content] — the colour the anchor's own label uses — so the label
+ * never changes colour in the frame the flying row replaces the anchor (either direction), and at
+ * fraction 1 it reaches [selectedRowContentColor]. The static option list only becomes visible at
+ * the morph-complete threshold, where this is already indistinguishable from the target colour, so
+ * it uses [selectedRowContentColor] directly and stays free of per-frame recomposition.
+ */
+internal fun flyingRowContentColor(style: PopupStyle, fraction: Float): Color =
+    lerp(style.colors.content, selectedRowContentColor(style), fraction.coerceIn(0f, 1f))
 
 /** [alpha] dimmed by the standard disabled opacity unless [item] is enabled. */
 private fun revealAlphaFor(item: PopupItem, alpha: Float, metrics: PopupMetrics): Float =
@@ -543,38 +565,71 @@ private fun FlyingSelectedRow(
                 .then(Modifier.focusedRowBackground(style)),
         )
 
-        Box(
-            modifier = Modifier
-                .layout { measurable, constraints ->
-                    val f = fractionProvider().coerceIn(0f, 1f)
-                    val scrollOffsetPx = scrollState.value.toFloat()
-                    val container = geometry.containerRect(f, scrollOffsetPx)
-                    val content = geometry.contentRect(f, scrollOffsetPx)
-                    val w = content.width.roundToInt().coerceAtLeast(0)
-                    val h = content.height.roundToInt().coerceAtLeast(0)
-                    val placeable = measurable.measure(Constraints.fixed(w, h))
-                    layout(constraints.maxWidth, constraints.maxHeight) {
-                        placeable.place(
-                            (content.left - container.left).roundToInt(),
-                            (content.top - container.top).roundToInt(),
-                        )
-                    }
-                },
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            PopupRowContent(
-                item = item,
-                contentColor = style.colors.content,
-                metrics = metrics,
-                autoMarquee = style.autoMarquee,
-                sections = sections,
-                layout = RowSectionLayout.Flying(
-                    itemIndex = selectedIndex,
-                    morphFraction = fractionProvider,
-                    collapsedContentWidthPx = geometry.collapsedContentWidthPx,
-                    rowContentWidthPx = geometry.rowContentWidthPx,
-                ),
-            )
-        }
+        FlyingRowContentSlot(
+            item = item,
+            selectedIndex = selectedIndex,
+            style = style,
+            sections = sections,
+            geometry = geometry,
+            fractionProvider = fractionProvider,
+            scrollState = scrollState,
+        )
+    }
+}
+
+/**
+ * The flying row's content box: the item's label and count, positioned by the flying geometry.
+ *
+ * Its content colour is [flyingRowContentColor], which tracks the morph fraction. Unlike every
+ * other fraction read around the flying row, this one happens in composition on purpose:
+ * `LocalContentColor` is consumed by arbitrary caller content at composition time, so the colour
+ * lerp cannot live in a draw or layout lambda. The read is isolated to this slot so the resulting
+ * per-frame recomposition during the morph stays scoped to the row content — the container layout,
+ * the highlight layer and the surface itself keep reading the fraction in their own phases.
+ */
+@Composable
+private fun FlyingRowContentSlot(
+    item: PopupItem,
+    selectedIndex: Int,
+    style: PopupStyle,
+    sections: RowSectionWidths?,
+    geometry: FlyingRowGeometry,
+    fractionProvider: () -> Float,
+    scrollState: ScrollState,
+) {
+    val contentColor = flyingRowContentColor(style, fractionProvider())
+
+    Box(
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val f = fractionProvider().coerceIn(0f, 1f)
+                val scrollOffsetPx = scrollState.value.toFloat()
+                val container = geometry.containerRect(f, scrollOffsetPx)
+                val content = geometry.contentRect(f, scrollOffsetPx)
+                val w = content.width.roundToInt().coerceAtLeast(0)
+                val h = content.height.roundToInt().coerceAtLeast(0)
+                val placeable = measurable.measure(Constraints.fixed(w, h))
+                layout(constraints.maxWidth, constraints.maxHeight) {
+                    placeable.place(
+                        (content.left - container.left).roundToInt(),
+                        (content.top - container.top).roundToInt(),
+                    )
+                }
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        PopupRowContent(
+            item = item,
+            contentColor = contentColor,
+            metrics = style.metrics,
+            autoMarquee = style.autoMarquee,
+            sections = sections,
+            layout = RowSectionLayout.Flying(
+                itemIndex = selectedIndex,
+                morphFraction = fractionProvider,
+                collapsedContentWidthPx = geometry.collapsedContentWidthPx,
+                rowContentWidthPx = geometry.rowContentWidthPx,
+            ),
+        )
     }
 }

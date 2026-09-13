@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,6 +80,20 @@ class PopupPanelUiTest : BaseComposeUiTest() {
     @Composable
     private fun RowScope.ProbeLabel(index: Int) {
         Text("${rowLabel(index)} ${LocalTextStyle.current.color.value}")
+    }
+
+    /**
+     * Deliberately probes [LocalContentColor], unlike [ProbeLabel]'s rationale above: these tests
+     * assert exactly which configured colour a row resolves its content against — the palette's
+     * `content`, or `activeContent` for the selected row — which `PopupRowBody` provides directly.
+     */
+    @Composable
+    private fun RowScope.ContentColorProbeLabel(index: Int) {
+        Text("${rowLabel(index)} ${LocalContentColor.current.value}")
+    }
+
+    private fun colorProbeItems(count: Int = 3): List<PopupItem> = List(count) { index ->
+        PopupItem(key = index, content = { ContentColorProbeLabel(index) })
     }
 
     @Composable
@@ -259,6 +274,78 @@ class PopupPanelUiTest : BaseComposeUiTest() {
 
         val probeText = probeColor.value.toString()
         row(0).assertTextContains(probeText, substring = true)
+    }
+
+    @Test
+    fun selectedRowResolvesItsContentAgainstTheActiveColor() = runComposeUiTest {
+        // The selected row's content — label and count slot alike — resolves against the palette's
+        // `activeContent` colour, while every other row keeps `content`. The highlight pill is
+        // unaffected.
+        val contentColor = Color(0xFF111111)
+        val activeColor = Color(0xFFFF00FF)
+        var expanded by mutableStateOf(false)
+
+        setContent {
+            PopupSelector(
+                items = colorProbeItems(),
+                expanded = expanded,
+                selectedIndex = 1,
+                onExpandedChange = { expanded = it },
+                onSelect = {},
+                modifier = Modifier.testTag(anchorTag),
+                style = PopupDefaults.style(
+                    colors = PopupDefaults.colors(content = contentColor, activeContent = activeColor),
+                ),
+                collapsedContent = { AnchorLabel() },
+                layout = fixedLayout(),
+            )
+        }
+
+        onNodeWithTag(anchorTag).performClick()
+        settle()
+
+        val activeText = activeColor.value.toString()
+        val contentText = contentColor.value.toString()
+        row(1).assertTextContains(activeText, substring = true)
+        row(0).assertTextContains(contentText, substring = true)
+        row(2).assertTextContains(contentText, substring = true)
+    }
+
+    @Test
+    fun selectedRowFallsBackToTheContentColorWithoutAnActiveColor() = runComposeUiTest {
+        // A palette built directly and predating the `activeContent` role (Unspecified) keeps its
+        // previous look: the selected row resolves against `content` like every other row.
+        val contentColor = Color(0xFF111111)
+        var expanded by mutableStateOf(false)
+
+        setContent {
+            PopupSelector(
+                items = colorProbeItems(),
+                expanded = expanded,
+                selectedIndex = 1,
+                onExpandedChange = { expanded = it },
+                onSelect = {},
+                modifier = Modifier.testTag(anchorTag),
+                style = PopupStyle(
+                    colors = PopupColors(
+                        collapsedContainer = Color.White,
+                        expandedContainer = Color.White,
+                        border = Color.Transparent,
+                        content = contentColor,
+                    ),
+                ),
+                collapsedContent = { AnchorLabel() },
+                layout = fixedLayout(),
+            )
+        }
+
+        onNodeWithTag(anchorTag).performClick()
+        settle()
+
+        val contentText = contentColor.value.toString()
+        row(1).assertTextContains(contentText, substring = true)
+        row(0).assertTextContains(contentText, substring = true)
+        row(2).assertTextContains(contentText, substring = true)
     }
 
     @Test

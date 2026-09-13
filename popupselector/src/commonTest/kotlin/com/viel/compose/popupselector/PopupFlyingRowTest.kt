@@ -1,6 +1,7 @@
 package com.viel.compose.popupselector
 
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -342,6 +343,72 @@ class PopupFlyingRowTest {
             flyingRect(held, index = 3, fraction = 1f).top,
             absoluteTolerance = 0.5f,
         )
+    }
+
+    // endregion
+
+    // region the flying row's content colour
+
+    private fun colorStyle(content: Color, activeContent: Color?) = PopupStyle(
+        colors = if (activeContent == null) {
+            PopupColors(
+                collapsedContainer = Color.White,
+                expandedContainer = Color.White,
+                border = Color.Transparent,
+                content = content,
+            )
+        } else {
+            PopupColors(
+                collapsedContainer = Color.White,
+                expandedContainer = Color.White,
+                border = Color.Transparent,
+                content = content,
+                activeContent = activeContent,
+            )
+        },
+    )
+
+    @Test
+    fun testFlyingRowContentColorStartsAtTheTriggerColourAndEndsActive() {
+        // Handover seamlessness: at fraction 0 the flying row replaces the hidden anchor, so its
+        // label must carry exactly the resting trigger's `content` colour; at fraction 1 it has
+        // fully become the panel's active colour.
+        val style = colorStyle(content = Color(0xFF111111), activeContent = Color(0xFFFF00FF))
+
+        assertEquals(Color(0xFF111111), flyingRowContentColor(style, 0f))
+        assertEquals(Color(0xFFFF00FF), flyingRowContentColor(style, 1f))
+    }
+
+    @Test
+    fun testFlyingRowContentColorBlendsThroughTheMorph() {
+        // Mid-morph the colour sits strictly between the two endpoints and moves monotonically
+        // with the fraction. Compose lerps colours in Oklab, so the midpoint's sRGB channels are
+        // not the naive average — the perceptual path is the point, and it is the same path the
+        // surface's container colours already follow.
+        val style = colorStyle(content = Color(0xFF000000), activeContent = Color(0xFFFFFFFF))
+
+        val quarter = flyingRowContentColor(style, 0.25f)
+        val half = flyingRowContentColor(style, 0.5f)
+        val threeQuarters = flyingRowContentColor(style, 0.75f)
+
+        assertTrue(
+            quarter.red in 0f..half.red && half.red in quarter.red..threeQuarters.red &&
+                threeQuarters.red in half.red..1f,
+            "the colour must blend monotonically between the endpoints " +
+                "($quarter, $half, $threeQuarters)",
+        )
+        assertTrue(half != style.colors.content && half != style.colors.activeContent)
+    }
+
+    @Test
+    fun testFlyingRowContentColorIgnoresTheMorphWithoutAnActiveColour() {
+        // A palette without an active colour falls back to `content` at every fraction, so its
+        // selected label keeps the pre-active look throughout the morph.
+        val style = colorStyle(content = Color(0xFF111111), activeContent = null)
+
+        assertEquals(Color(0xFF111111), flyingRowContentColor(style, 0f))
+        assertEquals(Color(0xFF111111), flyingRowContentColor(style, 0.5f))
+        assertEquals(Color(0xFF111111), flyingRowContentColor(style, 1f))
     }
 
     // endregion

@@ -164,13 +164,23 @@ sealed interface PopupWidth {
     data class Fixed(val width: Dp) : PopupWidth
 }
 
-/** Color roles for both morph endpoints. Interpolated continuously by the expand fraction. */
+/**
+ * Color roles for both morph endpoints. Interpolated continuously by the expand fraction.
+ *
+ * @param activeContent Content colour of the selected row in the expanded panel — the selected
+ *   counterpart of [content], which every other row (and the collapsed trigger) resolves against.
+ *   The whole row content (label and count slot) resolves against it through `LocalContentColor`.
+ *   [Color.Unspecified] — the constructor default, so palettes built before this role existed
+ *   keep their look — falls back to [content]. `PopupDefaults.colors()` resolves the default to
+ *   `MaterialTheme.colorScheme.primary`.
+ */
 @Stable
 data class PopupColors(
     val collapsedContainer: Color,
     val expandedContainer: Color,
     val border: Color,
     val content: Color,
+    val activeContent: Color = Color.Unspecified,
 )
 
 /** Default spring driving the morph animation and the staggered row reveal. */
@@ -252,11 +262,13 @@ object PopupDefaults {
         expandedContainer: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
         border: Color = MaterialTheme.colorScheme.outline,
         content: Color = MaterialTheme.colorScheme.onSurface,
+        activeContent: Color = MaterialTheme.colorScheme.primary,
     ): PopupColors = PopupColors(
         collapsedContainer = collapsedContainer,
         expandedContainer = expandedContainer,
         border = border,
         content = content,
+        activeContent = activeContent,
     )
 
     /**
@@ -268,11 +280,13 @@ object PopupDefaults {
     fun blurColors(
         border: Color = MaterialTheme.colorScheme.outline,
         content: Color = MaterialTheme.colorScheme.onSurface,
+        activeContent: Color = MaterialTheme.colorScheme.primary,
     ): PopupColors = PopupColors(
         collapsedContainer = Color.Transparent,
         expandedContainer = Color.Transparent,
         border = border,
         content = content,
+        activeContent = activeContent,
     )
 
     /** Builds a [PopupStyle] from individual overrides. */

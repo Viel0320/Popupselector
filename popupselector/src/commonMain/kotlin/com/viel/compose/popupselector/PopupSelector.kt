@@ -18,6 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -307,6 +310,123 @@ object PopupDefaults {
         animationSpec = animationSpec,
         sizeAnimationSpec = sizeAnimationSpec,
         autoMarquee = autoMarquee,
+    )
+}
+
+/**
+ * State holder for [PopupSelector] controlling expansion and selection.
+ *
+ * Use [rememberPopupSelectorState] to create and remember an instance.
+ *
+ * @param initialExpanded Initial expanded state of the selector.
+ * @param initialSelectedIndex Initial index of the selected option, or null if none is selected.
+ */
+@Stable
+class PopupSelectorState(
+    initialExpanded: Boolean = false,
+    initialSelectedIndex: Int? = null,
+) {
+    var expanded: Boolean by mutableStateOf(initialExpanded)
+    var selectedIndex: Int? by mutableStateOf(initialSelectedIndex)
+
+    fun expand() {
+        expanded = true
+    }
+
+    fun collapse() {
+        expanded = false
+    }
+
+    fun toggle() {
+        expanded = !expanded
+    }
+
+    /**
+     * Selects the option at [index] and collapses the selector.
+     *
+     * The index is stored as given; an out-of-bounds index does not throw, but the collapsed
+     * trigger will not display any selected option until a valid index is selected.
+     */
+    fun select(index: Int) {
+        selectedIndex = index
+        collapse()
+    }
+
+    companion object {
+        val Saver: Saver<PopupSelectorState, Any> = listSaver(
+            save = { listOf(it.expanded, it.selectedIndex) },
+            restore = {
+                PopupSelectorState(
+                    initialExpanded = it[0] as Boolean,
+                    initialSelectedIndex = it[1] as? Int,
+                )
+            },
+        )
+    }
+}
+
+/**
+ * Creates and remembers a [PopupSelectorState] with [rememberSaveable].
+ *
+ * @param initialExpanded Initial expanded state of the selector.
+ * @param initialSelectedIndex Initial index of the selected option, or null if none is selected.
+ */
+@Composable
+fun rememberPopupSelectorState(
+    initialExpanded: Boolean = false,
+    initialSelectedIndex: Int? = null,
+): PopupSelectorState = rememberSaveable(saver = PopupSelectorState.Saver) {
+    PopupSelectorState(
+        initialExpanded = initialExpanded,
+        initialSelectedIndex = initialSelectedIndex,
+    )
+}
+
+/**
+ * A fluid popup selector that morphs between a collapsed button and an expanded floating panel,
+ * driven by a [PopupSelectorState].
+ *
+ * @param items The options to display. Supply a stable list — one built inline per recomposition
+ *  re-runs the panel's section-width measurement and can make the aligned columns visibly jump.
+ *  `remember` the list, as the demo app does.
+ * @param modifier Modifier for the root container.
+ * @param state State holder controlling the expanded state and selected index.
+ * @param onSelect Optional callback invoked when an option is selected.
+ * @param style Visual configuration: metrics, timing, colors, typography and animation specs.
+ * @param layout Layout configuration: width strategy, max height, vertical and horizontal
+ *  placement, and host policy.
+ * @param anchorModifier Optional modifier applied to the collapsed trigger surface.
+ * @param surfaceModifier Optional modifier applied to the expanded floating surface.
+ * @param collapsedContent Optional custom content for the collapsed button. When null, the
+ *  selected option's content is shown instead. Last so it can be passed as a trailing lambda.
+ */
+@Composable
+fun PopupSelector(
+    items: List<PopupItem>,
+    modifier: Modifier = Modifier,
+    state: PopupSelectorState = rememberPopupSelectorState(),
+    onSelect: ((index: Int) -> Unit)? = null,
+    style: PopupStyle = style(),
+    layout: PopupLayout = PopupLayout(),
+    anchorModifier: Modifier = Modifier,
+    surfaceModifier: Modifier = Modifier,
+    collapsedContent: (@Composable RowScope.() -> Unit)? = null,
+) {
+    PopupSelector(
+        items = items,
+        expanded = state.expanded,
+        onExpandedChange = { state.expanded = it },
+        onSelect = { index ->
+            state.select(index)
+            onSelect?.invoke(index)
+        },
+        modifier = modifier,
+        selectedIndex = state.selectedIndex,
+        style = style,
+        layout = layout,
+        anchorModifier = anchorModifier,
+        surfaceModifier = surfaceModifier,
+        collapsedContent = collapsedContent,
     )
 }
 

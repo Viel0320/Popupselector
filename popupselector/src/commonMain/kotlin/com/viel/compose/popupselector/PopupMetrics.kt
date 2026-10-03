@@ -112,7 +112,7 @@ data class PopupMetrics(
  * [rememberMetricsPx] builds the instance once per metrics/density pair.
  */
 @Immutable
-internal class PopupMetricsPx(
+internal data class PopupMetricsPx(
     /** Corner radius of popup surfaces. */
     val cornerPx: Float,
     /** Width of the collapsed surface outline border. */

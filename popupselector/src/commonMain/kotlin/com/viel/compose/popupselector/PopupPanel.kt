@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -425,16 +426,31 @@ private fun PanelMeasurer(
         probes()
     }
 
-    LaunchedEffect(contentWidths.toList(), countWidths.toList()) {
-        val content = contentWidths.toList()
-        val counts = countWidths.toList()
-        if (content.all { it != null } && counts.all { it != null }) {
-            onMeasured(
+    // Probe rows report through onGloballyPositioned, so the width lists are rewritten one row
+    // at a time before measurement completes. Reading them directly from composition would
+    // recompose the measurer on every write, and keying an effect on the list contents would
+    // restart — and re-run onMeasured — per write. derivedStateOf collapses that into a single
+    // boolean: this scope only recomposes when completion actually flips, and the effect fires
+    // once. One fire suffices, because onMeasured makes the caller set measuredSections, which
+    // unmounts this measurer and its probes entirely. remember(items) re-captures the fresh
+    // width lists when items change, and onMeasured goes through rememberUpdatedState because
+    // the effect may outlive the recomposition that supplied it.
+    val isAllMeasured by remember(items) {
+        derivedStateOf {
+            contentWidths.all { it != null } && countWidths.all { it != null }
+        }
+    }
+    val currentOnMeasured by rememberUpdatedState(onMeasured)
+    LaunchedEffect(isAllMeasured, items) {
+        if (isAllMeasured) {
+            val content = contentWidths.map { it ?: 0f }
+            val counts = countWidths.map { it ?: 0f }
+            currentOnMeasured(
                 RowSectionWidths(
-                    contentWidthPx = content.filterNotNull().maxOrNull() ?: 0f,
-                    countWidthPx = counts.filterNotNull().maxOrNull() ?: 0f,
-                    itemContentWidthsPx = content.map { it!! },
-                    itemCountWidthsPx = counts.map { it!! },
+                    contentWidthPx = content.maxOrNull() ?: 0f,
+                    countWidthPx = counts.maxOrNull() ?: 0f,
+                    itemContentWidthsPx = content,
+                    itemCountWidthsPx = counts,
                 ),
             )
         }

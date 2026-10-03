@@ -7,9 +7,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 /**
@@ -50,7 +52,11 @@ class PopupOverlayHostState {
         val content: @Composable () -> Unit,
     )
 
-    internal val entries: SnapshotStateList<Entry> = mutableStateListOf()
+    // An immutable list swapped in whole rather than a SnapshotStateList: every membership
+    // change is a single state write, so a reader iterating during composition always observes
+    // one consistent snapshot and never a half-applied one.
+    internal var entries: List<Entry> by mutableStateOf(emptyList())
+        private set
 
     /**
      * Registers or replaces the content for [owner].
@@ -59,21 +65,22 @@ class PopupOverlayHostState {
      */
     internal fun setContent(owner: Any, content: (@Composable () -> Unit)?) {
         if (content == null) {
-            entries.removeAll { it.owner == owner }
+            clearContent(owner)
             return
         }
-        val index = entries.indexOfFirst { it.owner == owner }
         val entry = Entry(owner = owner, content = content)
-        if (index >= 0) {
-            entries[index] = entry
+        val current = entries
+        val index = current.indexOfFirst { it.owner == owner }
+        entries = if (index >= 0) {
+            current.toMutableList().apply { set(index, entry) }
         } else {
-            entries.add(entry)
+            current + entry
         }
     }
 
     /** Removes the entry owned by [owner], if any. */
     internal fun clearContent(owner: Any) {
-        entries.removeAll { it.owner == owner }
+        entries = entries.filterNot { it.owner == owner }
     }
 }
 
@@ -106,10 +113,17 @@ fun PopupOverlayHost(
         modifier = modifier.fillMaxSize(),
         propagateMinConstraints = false,
     ) {
-        // Snapshot the list so a mutation during composition cannot invalidate the iteration.
-        entries.toList().forEach { entry ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                entry.content()
+        // Iterating entries needs no snapshot-before-iteration: the list is immutable, so a
+        // mid-composition mutation swaps in a fresh list and schedules a new recomposition.
+        // Key each overlay by its owner rather than by position: overlays register and
+        // unregister independently, and positional identity would hand a removed overlay's slot
+        // to its neighbour, discarding the survivor's remembered state mid-flight. The owner key
+        // keeps each overlay's composition pinned to its own identity across membership changes.
+        entries.forEach { entry ->
+            key(entry.owner) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    entry.content()
+                }
             }
         }
     }
